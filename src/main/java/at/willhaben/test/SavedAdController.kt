@@ -23,24 +23,19 @@ class SavedAdController
     fun getFolder(@PathVariable userId: Long, @PathVariable folderId: Long): AdvertFolderWithItems {
         val findByIdAndUserId = folderRepository.findByIdAndUserId(folderId, userId)
         return findByIdAndUserId
-                .map { folder -> AdvertFolderWithItems(folder.folderId, folder.userId, folder.folderName, itemRepository.findByFolderId(folder.userId)) }
+                .map { folder -> folder.fetchItems() }
                 .orElseThrow()
     }
 
     @PostMapping("/{userId}/{folderId}")
     fun createItem(@PathVariable userId: Long, @PathVariable folderId: Long, @RequestBody item: CreateAdvertFolderItemDto): AdvertFolderItem {
-        return itemRepository.save(item.toAdvertFolderItem())
+        return itemRepository.save(item.toAdvertFolderItem(folderId))
+    }
+
+    fun AdvertFolderOnly.fetchItems(): AdvertFolderWithItems {
+        return AdvertFolderWithItems(this.folderId, this.userId, this.folderName, itemRepository.findByFolderId(this.userId))
     }
 
 }
 
-data class CreateFolderDto(val folderName: String)
 
-data class CreateAdvertFolderItemDto(val adId: Long, val title: String,
-                                     val description: String, val price: Long, val location: String,
-                                     val imageUrl: String, val folderId: Long) {
-    fun toAdvertFolderItem(): AdvertFolderItem {
-        return AdvertFolderItem(null, this.adId, this.title, this.description, this.price, this.location,
-                this.imageUrl, this.folderId)
-    }
-}
